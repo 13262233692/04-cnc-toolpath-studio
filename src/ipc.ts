@@ -1,4 +1,4 @@
-import { Toolpoint, ToolpathInfo, MachineConfig, MachineAxes } from "./types";
+import { ToolpathInfo, MachineConfig } from "./types";
 
 export async function parseGCode(content: string): Promise<ToolpathInfo> {
   if (window.__TAURI__) {
@@ -6,17 +6,6 @@ export async function parseGCode(content: string): Promise<ToolpathInfo> {
     return invoke<ToolpathInfo>("parse_gcode", { content });
   }
   return mockParseGCode(content);
-}
-
-export async function getToolpathChunk(
-  start: number,
-  count: number
-): Promise<Toolpoint[]> {
-  if (window.__TAURI__) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    return invoke<Toolpoint[]>("get_toolpath_chunk", { start, count });
-  }
-  return [];
 }
 
 export async function getMachineConfig(): Promise<MachineConfig> {
@@ -42,22 +31,6 @@ export async function setMachineConfig(config: MachineConfig): Promise<void> {
     const { invoke } = await import("@tauri-apps/api/core");
     return invoke("set_machine_config", { config });
   }
-}
-
-export async function inverseKinematics(
-  point: Toolpoint
-): Promise<MachineAxes> {
-  if (window.__TAURI__) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    return invoke<MachineAxes>("inverse_kinematics", { point });
-  }
-  return {
-    x: point.x,
-    y: point.y,
-    z: point.z,
-    a: point.a,
-    c: point.c,
-  };
 }
 
 function mockParseGCode(_content: string): ToolpathInfo {

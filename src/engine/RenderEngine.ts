@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FiveAxisMachine } from "./MachineModel";
-import { Toolpoint, MachineConfig, MachineAxes } from "../types";
-import { inverseKinematics } from "../ipc";
+import { MachineConfig, MachineAxes } from "../types";
 
 export class RenderEngine {
   private scene: THREE.Scene;
@@ -15,10 +14,10 @@ export class RenderEngine {
   private currentToolpoint: THREE.Mesh | null = null;
   private animationId: number | null = null;
   private boundsHelper: THREE.Box3Helper | null = null;
+  private toolpathPositions: Float32Array | null = null;
 
   constructor(container: HTMLElement, config: MachineConfig) {
     this.container = container;
-    this.machineConfig = config;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x1a1a2e);
@@ -103,21 +102,23 @@ export class RenderEngine {
     this.scene.add(axesHelper);
   }
 
-  public displayToolpath(points: Toolpoint[]): void {
+  public initToolpathLine(totalPoints: number): void {
     if (this.toolpathLine) {
       this.scene.remove(this.toolpathLine);
       this.toolpathLine.geometry.dispose();
     }
-
-    const positions = new Float32Array(points.length * 3);
-    for (let i = 0; i < points.length; i++) {
-      positions[i * 3] = points[i].x;
-      positions[i * 3 + 1] = points[i].z;
-      positions[i * 3 + 2] = points[i].y;
+    if (this.currentToolpoint) {
+      this.scene.remove(this.currentToolpoint);
     }
 
+    this.toolpathPositions = new Float32Array(totalPoints * 3);
+
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const attr = new THREE.BufferAttribute(this.toolpathPositions, 3);
+    attr.setUsage(THREE.DynamicDrawUsage);
+    attr.updateRange = { offset: 0, count: 0 };
+    geometry.setAttribute("position", attr);
+    geometry.setDrawRange(0, 0);
 
     const material = new THREE.LineBasicMaterial({
       color: 0x00ff88,
@@ -134,17 +135,28 @@ export class RenderEngine {
     this.scene.add(this.currentToolpoint);
   }
 
-  public async updateToolPosition(point: Toolpoint): Promise<void> {
-    const axes = await inverseKinematics(point);
-    this.machine.updateAxes(axes);
+  public appendToolpathPositions(positions: Float32Array, pointOffset: number): void {
+    if (!this.toolpathLine || !this.toolpathPositions) return;
 
-    if (this.currentToolpoint) {
-      this.currentToolpoint.position.set(point.x, point.z, point.y);
-    }
+    const destOffset = pointOffset * 3;
+    this.toolpathPositions.set(positions, destOffset);
+
+    const totalVisible = pointOffset + positions.length / 3;
+
+    const attr = this.toolpathLine.geometry.getAttribute("position") as THREE.BufferAttribute;
+    attr.updateRange = { offset: 0, count: totalVisible * 3 };
+    attr.needsUpdate = true;
+    this.toolpathLine.geometry.setDrawRange(0, totalVisible);
   }
 
   public updateMachineAxes(axes: MachineAxes): void {
     this.machine.updateAxes(axes);
+  }
+
+  public updateToolMarker(x: number, y: number, z: number): void {
+    if (this.currentToolpoint) {
+      this.currentToolpoint.position.set(x, z, y);
+    }
   }
 
   public showBounds(min: THREE.Vector3, max: THREE.Vector3): void {

@@ -2,32 +2,40 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { RenderEngine } from "./engine/RenderEngine";
 import { MaterialRemovalSystem } from "./engine/MaterialRemoval";
-import { parseGCode, getToolpathChunk, getMachineConfig } from "./ipc";
-import { Toolpoint, ToolpathInfo, MachineConfig } from "./types";
+import { ToolpathBuffer } from "./data/ToolpathBuffer";
+import { parseGCode, getMachineConfig } from "./ipc";
+import { ToolpathInfo, MachineConfig } from "./types";
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<RenderEngine | null>(null);
   const materialRemovalRef = useRef<MaterialRemovalSystem | null>(null);
-  const simulationRef = useRef<{
+  const bufferRef = useRef<ToolpathBuffer | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const simRef = useRef<{
     isPlaying: boolean;
     currentPoint: number;
     speed: number;
     lastTime: number;
+    totalPoints: number;
+    bufferReady: boolean;
   }>({
     isPlaying: false,
     currentPoint: 0,
     speed: 1,
     lastTime: 0,
+    totalPoints: 0,
+    bufferReady: false,
   });
+  const rafRef = useRef<number>(0);
 
   const [toolpathInfo, setToolpathInfo] = useState<ToolpathInfo | null>(null);
   const [machineConfig, setMachineConfig] = useState<MachineConfig | null>(null);
-  const [toolpath, setToolpath] = useState<Toolpoint[]>([]);
   const [currentPointIdx, setCurrentPointIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [status, setStatus] = useState<string>("就绪");
 
   useEffect(() => {
@@ -43,72 +51,88 @@ const App: React.FC = () => {
         materialRemovalRef.current = matRemoval;
         engine.setWorkpieceMaterial(matRemoval.getMaterial());
       }
+
+      const worker = new Worker(
+        new URL("./workers/simulationWorker.ts", import.meta.url),
+        { type: "module" }
+      );
+
+      worker.postMessage({ type: "init", config });
+
+      worker.onmessage = (e: MessageEvent) => {
+        const { type } = e.data;
+        switch (type) {
+          case "chunk-loaded": {
+            const { loadedPoints, totalPoints, chunkIndex, totalChunks } = e.data;
+            const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+            setLoadProgress(progress);
+            setStatus(`加载刀轨数据... ${progress}% (${loadedPoints.toLocaleString()}/${totalPoints.toLocaleString()})`);
+
+            if (bufferRef.current && engineRef.current) {
+              const positions = bufferRef.current.getRangePositionsFloat32(
+                e.data.chunkIndex * 50000,
+                loadedPoints - e.data.chunkIndex * 50000
+              );
+              engineRef.current.appendToolpathPositions(positions, e.data.chunkIndex * 50000);
+            }
+            break;
+          }
+
+          case "load-complete": {
+            const { totalPoints } = e.data;
+            simRef.current.totalPoints = totalPoints;
+            simRef.current.bufferReady = true;
+            simRef.current.currentPoint = 0;
+            setCurrentPointIdx(0);
+            setLoading(false);
+            setStatus(`加载完成 - 共 ${totalPoints.toLocaleString()} 个刀位点`);
+            break;
+          }
+
+          case "load-error": {
+            setLoading(false);
+            setStatus(`加载失败: ${e.data.error}`);
+            break;
+          }
+
+          case "chunk-error": {
+            setStatus(`分片 ${e.data.chunkIndex} 加载失败: ${e.data.error}`);
+            break;
+          }
+        }
+      };
+
+      workerRef.current = worker;
     };
 
     init();
 
     return () => {
-      if (engineRef.current) {
-        engineRef.current.dispose();
-      }
-      if (materialRemovalRef.current) {
-        materialRemovalRef.current.dispose();
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (workerRef.current) workerRef.current.terminate();
+      if (engineRef.current) engineRef.current.dispose();
+      if (materialRemovalRef.current) materialRemovalRef.current.dispose();
+      if (bufferRef.current) bufferRef.current.dispose();
     };
   }, []);
 
-  const handleFileUpload = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      setLoading(true);
-      setStatus("正在解析 G-code...");
-
-      try {
-        const content = await file.text();
-        const info = await parseGCode(content);
-        setToolpathInfo(info);
-
-        const chunkSize = 10000;
-        const allPoints: Toolpoint[] = [];
-        let offset = 0;
-
-        while (offset < info.num_points) {
-          const chunk = await getToolpathChunk(offset, chunkSize);
-          allPoints.push(...chunk);
-          offset += chunk.length;
-          setStatus(`加载刀轨点... ${offset}/${info.num_points}`);
-        }
-
-        setToolpath(allPoints);
-        if (engineRef.current && allPoints.length > 0) {
-          engineRef.current.displayToolpath(allPoints);
-          simulationRef.current.currentPoint = 0;
-          setCurrentPointIdx(0);
-        }
-
-        setStatus(`解析完成 - 共 ${info.num_points} 个刀位点`);
-      } catch (err) {
-        setStatus(`解析失败: ${err}`);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
   useEffect(() => {
-    if (!engineRef.current || toolpath.length === 0) return;
+    if (!engineRef.current || !bufferRef.current) return;
 
     const simulate = (time: number) => {
-      const sim = simulationRef.current;
+      const sim = simRef.current;
 
-      if (sim.isPlaying && sim.currentPoint < toolpath.length) {
+      if (sim.isPlaying && sim.bufferReady && sim.currentPoint < sim.totalPoints) {
         const delta = time - sim.lastTime;
-        if (delta > 16 / sim.speed) {
-          const point = toolpath[sim.currentPoint];
-          engineRef.current?.updateToolPosition(point);
+        const interval = 16 / sim.speed;
+
+        if (delta >= interval) {
+          const buffer = bufferRef.current!;
+          const point = buffer.getPoint(sim.currentPoint);
+          const axes = buffer.getAxes(sim.currentPoint);
+
+          engineRef.current!.updateMachineAxes(axes);
+          engineRef.current!.updateToolMarker(point.x, point.y, point.z);
 
           if (materialRemovalRef.current && engineRef.current) {
             const tipPos = engineRef.current.getToolTipPosition();
@@ -119,53 +143,98 @@ const App: React.FC = () => {
           }
 
           sim.currentPoint++;
-          setCurrentPointIdx(sim.currentPoint);
+          if (sim.currentPoint % 5 === 0) {
+            setCurrentPointIdx(sim.currentPoint);
+          }
           sim.lastTime = time;
         }
       }
 
-      if (sim.currentPoint >= toolpath.length && sim.isPlaying) {
+      if (sim.currentPoint >= sim.totalPoints && sim.isPlaying) {
         sim.isPlaying = false;
         setIsPlaying(false);
+        setCurrentPointIdx(sim.totalPoints);
         setStatus("仿真完成");
       }
 
-      requestAnimationFrame(simulate);
+      rafRef.current = requestAnimationFrame(simulate);
     };
 
-    const id = requestAnimationFrame(simulate);
-    return () => cancelAnimationFrame(id);
-  }, [toolpath]);
+    rafRef.current = requestAnimationFrame(simulate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setLoading(true);
+      setLoadProgress(0);
+      setStatus("正在解析 G-code...");
+
+      try {
+        const content = await file.text();
+        const info = await parseGCode(content);
+        setToolpathInfo(info);
+
+        if (info.num_points === 0) {
+          setStatus("未生成刀位点");
+          setLoading(false);
+          return;
+        }
+
+        bufferRef.current = new ToolpathBuffer();
+
+        if (engineRef.current) {
+          engineRef.current.initToolpathLine(info.num_points);
+        }
+
+        workerRef.current?.postMessage({
+          type: "load-toolpath",
+          totalPoints: info.num_points,
+        });
+      } catch (err) {
+        setStatus(`解析失败: ${err}`);
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const togglePlay = useCallback(() => {
-    const sim = simulationRef.current;
-    if (sim.currentPoint >= toolpath.length) {
+    const sim = simRef.current;
+    if (sim.currentPoint >= sim.totalPoints) {
       sim.currentPoint = 0;
       setCurrentPointIdx(0);
     }
     sim.isPlaying = !sim.isPlaying;
+    sim.lastTime = performance.now();
     setIsPlaying(sim.isPlaying);
     setStatus(sim.isPlaying ? "仿真运行中..." : "已暂停");
-  }, [toolpath.length]);
+  }, []);
 
   const resetSimulation = useCallback(() => {
-    simulationRef.current.currentPoint = 0;
-    simulationRef.current.isPlaying = false;
+    simRef.current.currentPoint = 0;
+    simRef.current.isPlaying = false;
     setCurrentPointIdx(0);
     setIsPlaying(false);
-    if (engineRef.current && toolpath.length > 0) {
-      engineRef.current.updateToolPosition(toolpath[0]);
-    }
     if (materialRemovalRef.current) {
       materialRemovalRef.current.reset();
     }
+    if (engineRef.current && bufferRef.current && bufferRef.current.loadedCount > 0) {
+      const point = bufferRef.current.getPoint(0);
+      const axes = bufferRef.current.getAxes(0);
+      engineRef.current.updateMachineAxes(axes);
+      engineRef.current.updateToolMarker(point.x, point.y, point.z);
+    }
     setStatus("已重置");
-  }, [toolpath]);
+  }, []);
 
   const handleSpeedChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newSpeed = parseFloat(e.target.value);
-      simulationRef.current.speed = newSpeed;
+      simRef.current.speed = newSpeed;
       setSpeed(newSpeed);
     },
     []
@@ -174,42 +243,46 @@ const App: React.FC = () => {
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const idx = parseInt(e.target.value);
-      simulationRef.current.currentPoint = idx;
+      simRef.current.currentPoint = idx;
       setCurrentPointIdx(idx);
-      if (engineRef.current && toolpath[idx]) {
-        engineRef.current.updateToolPosition(toolpath[idx]);
+      if (engineRef.current && bufferRef.current && idx < bufferRef.current.loadedCount) {
+        const point = bufferRef.current.getPoint(idx);
+        const axes = bufferRef.current.getAxes(idx);
+        engineRef.current.updateMachineAxes(axes);
+        engineRef.current.updateToolMarker(point.x, point.y, point.z);
       }
     },
-    [toolpath]
+    []
   );
 
   const loadDemoToolpath = useCallback(async () => {
     setLoading(true);
+    setLoadProgress(0);
     setStatus("生成演示刀轨...");
 
     const demoGCode = generateDemoGCode();
     const info = await parseGCode(demoGCode);
     setToolpathInfo(info);
 
-    const allPoints: Toolpoint[] = [];
-    let offset = 0;
-    const chunkSize = 10000;
-
-    while (offset < info.num_points) {
-      const chunk = await getToolpathChunk(offset, chunkSize);
-      allPoints.push(...chunk);
-      offset += chunk.length;
+    if (info.num_points === 0) {
+      setStatus("未生成刀位点");
+      setLoading(false);
+      return;
     }
 
-    setToolpath(allPoints);
-    if (engineRef.current && allPoints.length > 0) {
-      engineRef.current.displayToolpath(allPoints);
-      engineRef.current.updateToolPosition(allPoints[0]);
+    bufferRef.current = new ToolpathBuffer();
+
+    if (engineRef.current) {
+      engineRef.current.initToolpathLine(info.num_points);
     }
 
-    setLoading(false);
-    setStatus(`演示刀轨已加载 - ${info.num_points} 点`);
+    workerRef.current?.postMessage({
+      type: "load-toolpath",
+      totalPoints: info.num_points,
+    });
   }, []);
+
+  const totalPts = simRef.current.totalPoints;
 
   return (
     <div className="app-container">
@@ -224,11 +297,16 @@ const App: React.FC = () => {
             <h3>文件加载</h3>
             <label className="file-upload-btn">
               <input type="file" accept=".nc,.txt,.gcode" onChange={handleFileUpload} disabled={loading} />
-              {loading ? "加载中..." : "打开 G-code 文件"}
+              {loading ? `加载中 ${loadProgress}%...` : "打开 G-code 文件"}
             </label>
             <button className="demo-btn" onClick={loadDemoToolpath} disabled={loading}>
               加载演示程序
             </button>
+            {loading && (
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${loadProgress}%` }} />
+              </div>
+            )}
           </div>
 
           {toolpathInfo && (
@@ -254,10 +332,10 @@ const App: React.FC = () => {
           <div className="panel">
             <h3>仿真控制</h3>
             <div className="control-group">
-              <button className="control-btn play-btn" onClick={togglePlay} disabled={toolpath.length === 0}>
+              <button className="control-btn play-btn" onClick={togglePlay} disabled={!simRef.current.bufferReady}>
                 {isPlaying ? "⏸ 暂停" : "▶ 播放"}
               </button>
-              <button className="control-btn" onClick={resetSimulation} disabled={toolpath.length === 0}>
+              <button className="control-btn" onClick={resetSimulation} disabled={!simRef.current.bufferReady}>
                 ⟲ 重置
               </button>
             </div>
@@ -274,13 +352,13 @@ const App: React.FC = () => {
               />
             </div>
 
-            {toolpath.length > 0 && (
+            {totalPts > 0 && (
               <div className="slider-group">
-                <label>进度: {currentPointIdx} / {toolpath.length}</label>
+                <label>进度: {currentPointIdx.toLocaleString()} / {totalPts.toLocaleString()}</label>
                 <input
                   type="range"
                   min="0"
-                  max={toolpath.length - 1}
+                  max={totalPts - 1}
                   value={currentPointIdx}
                   onChange={handleSeek}
                 />

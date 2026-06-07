@@ -60,6 +60,15 @@ pub struct MachineAxes {
     pub c: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BinaryChunkHeader {
+    pub chunk_index: u32,
+    pub total_chunks: u32,
+    pub point_offset: u32,
+    pub point_count: u32,
+    pub total_points: u32,
+}
+
 impl MachineConfig {
     pub fn default_ac_axis() -> Self {
         MachineConfig {
@@ -97,5 +106,29 @@ impl Bounds {
         self.max_y = self.max_y.max(p.y);
         self.min_z = self.min_z.min(p.z);
         self.max_z = self.max_z.max(p.z);
+    }
+}
+
+impl Toolpoint {
+    pub const FIELD_COUNT: usize = 8;
+    pub const BYTE_SIZE: usize = 7 * 8 + 4;
+
+    pub fn to_bytes(&self, buf: &mut [u8]) {
+        let mut offset = 0;
+        buf[offset..offset + 8].copy_from_slice(&self.x.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.y.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.z.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.a.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.c.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.feed.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 8].copy_from_slice(&self.spindle.to_le_bytes());
+        offset += 8;
+        buf[offset..offset + 4].copy_from_slice(&(self.line_number as u32).to_le_bytes());
     }
 }
