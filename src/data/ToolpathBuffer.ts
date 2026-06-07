@@ -1,4 +1,5 @@
 export const POINT_BYTE_SIZE = 60;
+export const MRR_BYTE_SIZE = 52;
 
 export interface DecodedToolpoint {
   x: number;
@@ -9,6 +10,15 @@ export interface DecodedToolpoint {
   feed: number;
   spindle: number;
   line_number: number;
+}
+
+export interface DecodedMrrPoint {
+  engagement_area: number;
+  mrr: number;
+  feed_override: number;
+  axial_depth: number;
+  radial_depth: number;
+  load_level: number;
 }
 
 export interface BinaryChunkHeader {
@@ -27,6 +37,10 @@ export class ToolpathBuffer {
   private loadedPoints: number = 0;
   private axesBuffer: SharedArrayBuffer | null = null;
   private axesFloatView: Float64Array | null = null;
+  private mrrBuffer: SharedArrayBuffer | null = null;
+  private mrrFloatView: Float64Array | null = null;
+  private mrrUint32View: Uint32Array | null = null;
+  private mrrLoaded: boolean = false;
 
   get totalCount(): number {
     return this.totalPoints;
@@ -40,12 +54,8 @@ export class ToolpathBuffer {
     return this.loadedPoints >= this.totalPoints && this.totalPoints > 0;
   }
 
-  get pointsBuffer(): SharedArrayBuffer | null {
-    return this.buffer;
-  }
-
-  get axesData(): Float64Array | null {
-    return this.axesFloatView;
+  get hasMrrData(): boolean {
+    return this.mrrLoaded;
   }
 
   allocate(totalPoints: number): void {
@@ -60,6 +70,11 @@ export class ToolpathBuffer {
     const axesByteLength = totalPoints * 5 * 8;
     this.axesBuffer = new SharedArrayBuffer(axesByteLength);
     this.axesFloatView = new Float64Array(this.axesBuffer);
+
+    const mrrByteLength = totalPoints * MRR_BYTE_SIZE;
+    this.mrrBuffer = new SharedArrayBuffer(mrrByteLength);
+    this.mrrFloatView = new Float64Array(this.mrrBuffer);
+    this.mrrUint32View = new Uint32Array(this.mrrBuffer);
   }
 
   decodeAndStore(raw: ArrayBuffer): BinaryChunkHeader {
@@ -95,6 +110,37 @@ export class ToolpathBuffer {
     return header;
   }
 
+  decodeAndStoreMrr(raw: ArrayBuffer): BinaryChunkHeader {
+    const view = new DataView(raw);
+
+    const headerLen = view.getUint32(0, true);
+    const headerBytes = new Uint8Array(raw, 4, headerLen);
+    const headerText = new TextDecoder().decode(headerBytes);
+    const header: BinaryChunkHeader = JSON.parse(headerText);
+
+    const dataOffset = 4 + headerLen;
+    const pointCount = header.point_count;
+    const baseIndex = header.point_offset;
+
+    const srcView = new DataView(raw, dataOffset);
+
+    for (let i = 0; i < pointCount; i++) {
+      const srcOffset = i * MRR_BYTE_SIZE;
+      const dstFloatBase = (baseIndex + i) * (MRR_BYTE_SIZE / 8);
+      const dstUintBase = (baseIndex + i) * (MRR_BYTE_SIZE / 4);
+
+      this.mrrFloatView![dstFloatBase + 0] = srcView.getFloat64(srcOffset + 0, true);
+      this.mrrFloatView![dstFloatBase + 1] = srcView.getFloat64(srcOffset + 8, true);
+      this.mrrFloatView![dstFloatBase + 2] = srcView.getFloat64(srcOffset + 16, true);
+      this.mrrFloatView![dstFloatBase + 3] = srcView.getFloat64(srcOffset + 24, true);
+      this.mrrFloatView![dstFloatBase + 4] = srcView.getFloat64(srcOffset + 32, true);
+      this.mrrUint32View![dstUintBase + 10] = srcView.getUint32(srcOffset + 40, true);
+    }
+
+    this.mrrLoaded = true;
+    return header;
+  }
+
   storeAxesBatch(rawAxes: ArrayBuffer, offset: number): void {
     const src = new Float64Array(rawAxes);
     const dstOffset = offset * 5;
@@ -127,6 +173,47 @@ export class ToolpathBuffer {
     };
   }
 
+  getMrrPoint(index: number): DecodedMrrPoint {
+    const floatBase = index * (MRR_BYTE_SIZE / 8);
+    const uintBase = index * (MRR_BYTE_SIZE / 4);
+    return {
+      engagement_area: this.mrrFloatView![floatBase + 0],
+      mrr: this.mrrFloatView![floatBase + 1],
+      feed_override: this.mrrFloatView![floatBase + 2],
+      axial_depth: this.mrrFloatView![floatBase + 3],
+      radial_depth: this.mrrFloatView![floatBase + 4],
+      load_level: this.mrrUint32View![uintBase + 10],
+    };
+  }
+
+  getFeedOverride(index: number): number {
+    if (!this.mrrLoaded) return 1.0;
+    const floatBase = index * (MRR_BYTE_SIZE / 8);
+    return this.mrrFloatView![floatBase + 2];
+  }
+
+  getLoadLevel(index: number): number {
+    if (!this.mrrLoaded) return 0;
+    const uintBase = index * (MRR_BYTE_SIZE / 4);
+    return this.mrrUint32View![uintBase + 10];
+  }
+
+  getMrrRange(start: number, count: number): { mrr: Float64Array; override: Float64Array; loadLevel: Uint32Array } {
+    const end = Math.min(start + count, this.loadedPoints);
+    const len = end - start;
+    const mrr = new Float64Array(len);
+    const override = new Float64Array(len);
+    const loadLevel = new Uint32Array(len);
+    for (let i = 0; i < len; i++) {
+      const floatBase = (start + i) * (MRR_BYTE_SIZE / 8);
+      const uintBase = (start + i) * (MRR_BYTE_SIZE / 4);
+      mrr[i] = this.mrrFloatView![floatBase + 1];
+      override[i] = this.mrrFloatView![floatBase + 2];
+      loadLevel[i] = this.mrrUint32View![uintBase + 10];
+    }
+    return { mrr, override, loadLevel };
+  }
+
   getPositionsFloat32(): Float32Array {
     const positions = new Float32Array(this.loadedPoints * 3);
     for (let i = 0; i < this.loadedPoints; i++) {
@@ -157,7 +244,11 @@ export class ToolpathBuffer {
     this.uint32View = null;
     this.axesBuffer = null;
     this.axesFloatView = null;
+    this.mrrBuffer = null;
+    this.mrrFloatView = null;
+    this.mrrUint32View = null;
     this.totalPoints = 0;
     this.loadedPoints = 0;
+    this.mrrLoaded = false;
   }
 }

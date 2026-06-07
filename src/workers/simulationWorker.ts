@@ -1,5 +1,5 @@
 import { ToolpathBuffer } from "../data/ToolpathBuffer";
-import { MachineConfig } from "../types";
+import { MachineConfig, MrrAnalysisConfig } from "../types";
 
 const CHUNK_SIZE = 50000;
 const IK_BATCH_SIZE = 5000;
@@ -63,14 +63,8 @@ async function computeAxesBatch(offset: number, count: number): Promise<void> {
   if (!state.buffer || !state.config) return;
 
   const points: {
-    x: number;
-    y: number;
-    z: number;
-    a: number;
-    c: number;
-    feed: number;
-    spindle: number;
-    line_number: number;
+    x: number; y: number; z: number; a: number; c: number;
+    feed: number; spindle: number; line_number: number;
   }[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -84,18 +78,46 @@ async function computeAxesBatch(offset: number, count: number): Promise<void> {
       const rawAxes = await invoke<ArrayBuffer>("batch_inverse_kinematics", {
         points: batchPoints,
       });
-
       state.buffer.storeAxesBatch(rawAxes, offset + batch);
     } catch {
       for (let j = 0; j < batchPoints.length; j++) {
         const p = batchPoints[j];
-        const fallback = new Float64Array([
-          p.x, p.y, p.z, p.a, p.c,
-        ]);
+        const fallback = new Float64Array([p.x, p.y, p.z, p.a, p.c]);
         state.buffer.storeAxesBatch(fallback.buffer, offset + batch + j);
       }
     }
   }
+}
+
+async function loadMrrChunks(): Promise<void> {
+  if (!state.buffer) return;
+
+  const totalPoints = state.buffer.totalCount;
+  const totalChunks = Math.ceil(totalPoints / CHUNK_SIZE);
+
+  for (let i = 0; i < totalChunks; i++) {
+    try {
+      const raw = await invoke<ArrayBuffer>("get_mrr_binary_chunk", {
+        chunkIndex: i,
+      });
+
+      state.buffer.decodeAndStoreMrr(raw);
+
+      self.postMessage({
+        type: "mrr-chunk-loaded",
+        chunkIndex: i,
+        totalChunks,
+      });
+    } catch (err) {
+      self.postMessage({
+        type: "mrr-chunk-error",
+        chunkIndex: i,
+        error: String(err),
+      });
+    }
+  }
+
+  self.postMessage({ type: "mrr-load-complete" });
 }
 
 self.onmessage = async (e: MessageEvent) => {
@@ -117,32 +139,27 @@ self.onmessage = async (e: MessageEvent) => {
       break;
     }
 
+    case "analyze-mrr": {
+      try {
+        const config: MrrAnalysisConfig | undefined = e.data.config;
+        if (config) {
+          await invoke("analyze_mrr", { config });
+        } else {
+          await invoke("analyze_mrr_default");
+        }
+        await loadMrrChunks();
+      } catch (err) {
+        self.postMessage({ type: "mrr-error", error: String(err) });
+      }
+      break;
+    }
+
     case "get-point": {
       if (!state.buffer) return;
       const point = state.buffer.getPoint(e.data.index);
       const axes = state.buffer.getAxes(e.data.index);
-      self.postMessage({ type: "point-result", point, axes, index: e.data.index });
-      break;
-    }
-
-    case "get-range-positions": {
-      if (!state.buffer) return;
-      const { start, count } = e.data;
-      const positions = state.buffer.getRangePositionsFloat32(start, count);
-      self.postMessage(
-        { type: "range-positions", start, positions },
-        { transfer: [positions.buffer] } as any
-      );
-      break;
-    }
-
-    case "get-all-positions": {
-      if (!state.buffer) return;
-      const positions = state.buffer.getPositionsFloat32();
-      self.postMessage(
-        { type: "all-positions", positions },
-        { transfer: [positions.buffer] } as any
-      );
+      const mrr = state.buffer.hasMrrData ? state.buffer.getMrrPoint(e.data.index) : null;
+      self.postMessage({ type: "point-result", point, axes, mrr, index: e.data.index });
       break;
     }
 

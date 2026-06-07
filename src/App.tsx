@@ -4,7 +4,30 @@ import { RenderEngine } from "./engine/RenderEngine";
 import { MaterialRemovalSystem } from "./engine/MaterialRemoval";
 import { ToolpathBuffer } from "./data/ToolpathBuffer";
 import { parseGCode, getMachineConfig } from "./ipc";
-import { ToolpathInfo, MachineConfig } from "./types";
+import { ToolpathInfo, MachineConfig, MrrAnalysisConfig, MrrSummary } from "./types";
+import { MrrChart } from "./components/MrrChart";
+import { ToolConfigPanel } from "./components/ToolConfigPanel";
+
+const DEFAULT_MRR_CONFIG: MrrAnalysisConfig = {
+  tool: {
+    tool_type: "BallEnd",
+    diameter: 10,
+    corner_radius: 5,
+    flute_length: 25,
+    num_flutes: 4,
+    rake_angle: 12,
+  },
+  stock: {
+    min_x: -100, min_y: -100, min_z: -50,
+    max_x: 100, max_y: 100, max_z: 0,
+    resolution: 0.5,
+  },
+  max_mrr: 500,
+  overload_threshold: 0.8,
+  min_feed_override: 0.1,
+  smoothing_window: 20,
+  lookahead_distance: 5.0,
+};
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -19,6 +42,8 @@ const App: React.FC = () => {
     lastTime: number;
     totalPoints: number;
     bufferReady: boolean;
+    feedOverride: number;
+    loadLevel: number;
   }>({
     isPlaying: false,
     currentPoint: 0,
@@ -26,17 +51,30 @@ const App: React.FC = () => {
     lastTime: 0,
     totalPoints: 0,
     bufferReady: false,
+    feedOverride: 1.0,
+    loadLevel: 0,
   });
   const rafRef = useRef<number>(0);
 
   const [toolpathInfo, setToolpathInfo] = useState<ToolpathInfo | null>(null);
-  const [machineConfig, setMachineConfig] = useState<MachineConfig | null>(null);
+  const [, setMachineConfig] = useState<MachineConfig | null>(null);
   const [currentPointIdx, setCurrentPointIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [status, setStatus] = useState<string>("就绪");
+
+  const [mrrConfig, setMrrConfig] = useState<MrrAnalysisConfig>(DEFAULT_MRR_CONFIG);
+  const [mrrSummary, setMrrSummary] = useState<MrrSummary | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [mrrData, setMrrData] = useState<Float64Array | null>(null);
+  const [overrideData, setOverrideData] = useState<Float64Array | null>(null);
+  const [loadLevelData, setLoadLevelData] = useState<Uint32Array | null>(null);
+  const [currentFeedOverride, setCurrentFeedOverride] = useState(1.0);
+  const [currentLoadLevel, setCurrentLoadLevel] = useState<number>(0);
+
+  const mrrChartRangeRef = useRef({ start: 0, end: 1000 });
 
   useEffect(() => {
     const init = async () => {
@@ -86,6 +124,21 @@ const App: React.FC = () => {
             setCurrentPointIdx(0);
             setLoading(false);
             setStatus(`加载完成 - 共 ${totalPoints.toLocaleString()} 个刀位点`);
+
+            if (toolpathInfo) {
+              setMrrConfig((prev) => ({
+                ...prev,
+                stock: {
+                  ...prev.stock,
+                  min_x: toolpathInfo.bounds.min_x,
+                  min_y: toolpathInfo.bounds.min_y,
+                  max_x: toolpathInfo.bounds.max_x,
+                  max_y: toolpathInfo.bounds.max_y,
+                  max_z: toolpathInfo.bounds.max_z,
+                  min_z: toolpathInfo.bounds.min_z,
+                },
+              }));
+            }
             break;
           }
 
@@ -97,6 +150,39 @@ const App: React.FC = () => {
 
           case "chunk-error": {
             setStatus(`分片 ${e.data.chunkIndex} 加载失败: ${e.data.error}`);
+            break;
+          }
+
+          case "mrr-chunk-loaded": {
+            const { chunkIndex, totalChunks } = e.data;
+            const mrrProgress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+            setStatus(`MRR 数据加载... ${mrrProgress}%`);
+            break;
+          }
+
+          case "mrr-load-complete": {
+            setIsAnalyzing(false);
+            setStatus("MRR 分析完成");
+
+            if (bufferRef.current && bufferRef.current.hasMrrData) {
+              const total = bufferRef.current.totalCount;
+              const range = bufferRef.current.getMrrRange(0, total);
+              setMrrData(range.mrr);
+              setOverrideData(range.override);
+              setLoadLevelData(range.loadLevel);
+              mrrChartRangeRef.current = { start: 0, end: Math.min(2000, total) };
+            }
+            break;
+          }
+
+          case "mrr-error": {
+            setIsAnalyzing(false);
+            setStatus(`MRR 分析失败: ${e.data.error}`);
+            break;
+          }
+
+          case "mrr-chunk-error": {
+            setStatus(`MRR 分片 ${e.data.chunkIndex} 加载失败`);
             break;
           }
         }
@@ -124,7 +210,8 @@ const App: React.FC = () => {
 
       if (sim.isPlaying && sim.bufferReady && sim.currentPoint < sim.totalPoints) {
         const delta = time - sim.lastTime;
-        const interval = 16 / sim.speed;
+        const effectiveSpeed = sim.speed * sim.feedOverride;
+        const interval = 16 / effectiveSpeed;
 
         if (delta >= interval) {
           const buffer = bufferRef.current!;
@@ -142,9 +229,19 @@ const App: React.FC = () => {
             );
           }
 
+          if (buffer.hasMrrData) {
+            sim.feedOverride = buffer.getFeedOverride(sim.currentPoint);
+            sim.loadLevel = buffer.getLoadLevel(sim.currentPoint);
+          } else {
+            sim.feedOverride = 1.0;
+            sim.loadLevel = 0;
+          }
+
           sim.currentPoint++;
           if (sim.currentPoint % 5 === 0) {
             setCurrentPointIdx(sim.currentPoint);
+            setCurrentFeedOverride(sim.feedOverride);
+            setCurrentLoadLevel(sim.loadLevel);
           }
           sim.lastTime = time;
         }
@@ -172,6 +269,10 @@ const App: React.FC = () => {
       setLoading(true);
       setLoadProgress(0);
       setStatus("正在解析 G-code...");
+      setMrrData(null);
+      setOverrideData(null);
+      setLoadLevelData(null);
+      setMrrSummary(null);
 
       try {
         const content = await file.text();
@@ -202,6 +303,18 @@ const App: React.FC = () => {
     []
   );
 
+  const handleAnalyzeMrr = useCallback(() => {
+    if (!workerRef.current || !simRef.current.bufferReady) return;
+
+    setIsAnalyzing(true);
+    setStatus("MRR 分析中...");
+
+    workerRef.current.postMessage({
+      type: "analyze-mrr",
+      config: mrrConfig,
+    });
+  }, [mrrConfig]);
+
   const togglePlay = useCallback(() => {
     const sim = simRef.current;
     if (sim.currentPoint >= sim.totalPoints) {
@@ -217,8 +330,12 @@ const App: React.FC = () => {
   const resetSimulation = useCallback(() => {
     simRef.current.currentPoint = 0;
     simRef.current.isPlaying = false;
+    simRef.current.feedOverride = 1.0;
+    simRef.current.loadLevel = 0;
     setCurrentPointIdx(0);
     setIsPlaying(false);
+    setCurrentFeedOverride(1.0);
+    setCurrentLoadLevel(0);
     if (materialRemovalRef.current) {
       materialRemovalRef.current.reset();
     }
@@ -250,6 +367,15 @@ const App: React.FC = () => {
         const axes = bufferRef.current.getAxes(idx);
         engineRef.current.updateMachineAxes(axes);
         engineRef.current.updateToolMarker(point.x, point.y, point.z);
+
+        if (bufferRef.current.hasMrrData) {
+          const fo = bufferRef.current.getFeedOverride(idx);
+          const ll = bufferRef.current.getLoadLevel(idx);
+          setCurrentFeedOverride(fo);
+          setCurrentLoadLevel(ll);
+          simRef.current.feedOverride = fo;
+          simRef.current.loadLevel = ll;
+        }
       }
     },
     []
@@ -284,17 +410,44 @@ const App: React.FC = () => {
 
   const totalPts = simRef.current.totalPoints;
 
+  const overridePercent = (currentFeedOverride * 100).toFixed(0);
+  const loadLevelColors: Record<number, string> = {
+    0: "#22c55e",
+    1: "#3b82f6",
+    2: "#f59e0b",
+    3: "#ef4444",
+  };
+  const loadLevelLabels: Record<number, string> = {
+    0: "Low",
+    1: "Normal",
+    2: "High",
+    3: "Critical",
+  };
+
   return (
     <div className="app-container">
       <header className="app-header">
         <h1>CNC Toolpath Studio</h1>
-        <span className="status-badge">{status}</span>
+        <div className="header-status-group">
+          {mrrData && (
+            <div className="override-indicator" style={{ borderColor: loadLevelColors[currentLoadLevel] || "#334155" }}>
+              <span className="override-label">Feed Override</span>
+              <span className="override-value" style={{ color: loadLevelColors[currentLoadLevel] || "#e2e8f0" }}>
+                {overridePercent}%
+              </span>
+              <span className="load-label" style={{ color: loadLevelColors[currentLoadLevel] || "#94a3b8" }}>
+                {loadLevelLabels[currentLoadLevel] || "N/A"}
+              </span>
+            </div>
+          )}
+          <span className="status-badge">{status}</span>
+        </div>
       </header>
 
       <div className="main-content">
         <aside className="sidebar">
           <div className="panel">
-            <h3>文件加载</h3>
+            <div className="panel-title">📁 File Load</div>
             <label className="file-upload-btn">
               <input type="file" accept=".nc,.txt,.gcode" onChange={handleFileUpload} disabled={loading} />
               {loading ? `加载中 ${loadProgress}%...` : "打开 G-code 文件"}
@@ -311,7 +464,7 @@ const App: React.FC = () => {
 
           {toolpathInfo && (
             <div className="panel">
-              <h3>刀轨信息</h3>
+              <div className="panel-title">📊 Toolpath Info</div>
               <div className="info-grid">
                 <div className="info-item">
                   <span className="label">刀位点</span>
@@ -330,7 +483,7 @@ const App: React.FC = () => {
           )}
 
           <div className="panel">
-            <h3>仿真控制</h3>
+            <div className="panel-title">🎮 Simulation Control</div>
             <div className="control-group">
               <button className="control-btn play-btn" onClick={togglePlay} disabled={!simRef.current.bufferReady}>
                 {isPlaying ? "⏸ 暂停" : "▶ 播放"}
@@ -341,7 +494,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="slider-group">
-              <label>速度: {speed.toFixed(1)}x</label>
+              <label>速度: {speed.toFixed(1)}x{currentFeedOverride < 1.0 ? ` × ${currentFeedOverride.toFixed(2)} (MRR)` : ""}</label>
               <input
                 type="range"
                 min="0.1"
@@ -366,29 +519,29 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {machineConfig && (
-            <div className="panel">
-              <h3>机床参数</h3>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">A轴范围</span>
-                  <span className="value">{machineConfig.a_axis_min}° ~ {machineConfig.a_axis_max}°</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">C轴范围</span>
-                  <span className="value">{machineConfig.c_axis_min}° ~ {machineConfig.c_axis_max}°</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">X/Y/Z行程</span>
-                  <span className="value">{machineConfig.x_travel}/{machineConfig.y_travel}/{machineConfig.z_travel}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          <ToolConfigPanel
+            config={mrrConfig}
+            onConfigChange={setMrrConfig}
+            onAnalyze={handleAnalyzeMrr}
+            summary={mrrSummary}
+            isAnalyzing={isAnalyzing}
+          />
         </aside>
 
         <main className="viewport">
           <div ref={canvasRef} className="canvas-container" />
+          {mrrData && (
+            <div className="mrr-chart-overlay">
+              <MrrChart
+                mrrData={mrrData}
+                overrideData={overrideData}
+                loadLevelData={loadLevelData}
+                currentPoint={currentPointIdx}
+                summary={mrrSummary}
+                visibleRange={mrrChartRangeRef.current}
+              />
+            </div>
+          )}
         </main>
       </div>
     </div>
