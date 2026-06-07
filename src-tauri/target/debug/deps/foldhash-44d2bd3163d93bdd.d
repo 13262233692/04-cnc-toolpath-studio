@@ -1,0 +1,11 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\foldhash-44d2bd3163d93bdd.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\fast.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\quality.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\seed.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\convenience.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libfoldhash-44d2bd3163d93bdd.rlib: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\fast.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\quality.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\seed.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\convenience.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libfoldhash-44d2bd3163d93bdd.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\fast.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\quality.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\seed.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\convenience.rs
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\fast.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\quality.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\seed.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\foldhash-0.2.0\src\convenience.rs:

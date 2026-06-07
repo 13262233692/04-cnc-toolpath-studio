@@ -1,0 +1,6 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\percent_encoding-6e03319ebaec33ad.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\ascii_set.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libpercent_encoding-6e03319ebaec33ad.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\ascii_set.rs
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\percent-encoding-2.3.2\src\ascii_set.rs:

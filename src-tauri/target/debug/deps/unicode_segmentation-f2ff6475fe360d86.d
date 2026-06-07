@@ -1,0 +1,9 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\unicode_segmentation-f2ff6475fe360d86.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\grapheme.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\sentence.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\word.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\tables.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libunicode_segmentation-f2ff6475fe360d86.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\grapheme.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\sentence.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\word.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\tables.rs
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\grapheme.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\sentence.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\word.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\unicode-segmentation-1.13.3\src\tables.rs:

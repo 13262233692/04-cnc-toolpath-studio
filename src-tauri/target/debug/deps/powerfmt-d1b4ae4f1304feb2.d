@@ -1,0 +1,11 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\powerfmt-d1b4ae4f1304feb2.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\buf.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\ext.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display_impls.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libpowerfmt-d1b4ae4f1304feb2.rlib: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\buf.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\ext.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display_impls.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libpowerfmt-d1b4ae4f1304feb2.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\buf.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\ext.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display_impls.rs
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\buf.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\ext.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\powerfmt-0.2.0\src\smart_display_impls.rs:

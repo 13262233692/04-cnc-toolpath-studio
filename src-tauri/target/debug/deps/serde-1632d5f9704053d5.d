@@ -1,0 +1,14 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\serde-1632d5f9704053d5.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\integer128.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\mod.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\de.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\ser.rs D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\build\serde-69dadcdd184ecf30\out/private.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libserde-1632d5f9704053d5.rlib: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\integer128.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\mod.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\de.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\ser.rs D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\build\serde-69dadcdd184ecf30\out/private.rs
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libserde-1632d5f9704053d5.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\integer128.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\mod.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\de.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\ser.rs D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\build\serde-69dadcdd184ecf30\out/private.rs
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\integer128.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\mod.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\de.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\serde-1.0.228\src\private\ser.rs:
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\build\serde-69dadcdd184ecf30\out/private.rs:
+
+# env-dep:OUT_DIR=D:\\SOLO-9\\04-cnc-toolpath-studio\\src-tauri\\target\\debug\\build\\serde-69dadcdd184ecf30\\out

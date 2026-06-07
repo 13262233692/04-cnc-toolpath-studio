@@ -1,0 +1,14 @@
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\softbuffer-67f4232b6bde320b.d: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_dispatch.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_interface.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\mod.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\win32.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\error.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\util.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\../README.md
+
+D:\SOLO-9\04-cnc-toolpath-studio\src-tauri\target\debug\deps\libsoftbuffer-67f4232b6bde320b.rmeta: C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\lib.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_dispatch.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_interface.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\mod.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\win32.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\error.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\util.rs C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\../README.md
+
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\lib.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_dispatch.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backend_interface.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\mod.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\backends\win32.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\error.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\util.rs:
+C:\Users\ZhuanZ\.cargo\registry\src\mirrors.aliyun.com-0671735e7cc7f5e7\softbuffer-0.4.8\src\../README.md:
+
+# env-dep:CARGO_PKG_VERSION=0.4.8
